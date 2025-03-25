@@ -17,4 +17,3 @@ services:
 volumes:
   npm_data:
   npm_letsencrypt:
-   

@@ -2,25 +2,25 @@ version: "3.9"
 
 services:
   filezilla:
-    image: lscr.io/linuxserver/filezilla:latest # Image officielle FileZilla par LinuxServer.io
-    container_name: FileZilla # Nom du conteneur pour une identification facile
+    image: lscr.io/linuxserver/filezilla:latest
+    container_name: FileZilla
     security_opt:
-      - seccomp:unconfined # Désactive le profil seccomp par défaut pour éviter des restrictions inutiles
+      - seccomp:unconfined
     environment:
-      - PUID=1000 # ID utilisateur local (doit correspondre à l'utilisateur sur l'hôte)
-      - PGID=1000 # ID groupe local (doit correspondre au groupe sur l'hôte)
-      - TZ=Europe/Brussels # Fuseau horaire du conteneur
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Brussels
     volumes:
-      - /home/cfitech/Filezilla:/config # Volume pour stocker les fichiers de configuration
-      # - /home/cfitech/nas:/NAS # (Optionnel) Volume pour accéder au NAS local
-      # - /home/cfitech/Synology:/SYNOLOGY # (Optionnel) Volume pour accéder au Synology local
+      - /home/cfitech/Filezilla:/config
+      # - /home/cfitech/nas:/NAS
+      # - /home/cfitech/Synology:/SYNOLOGY
     ports:
-      - 3300:3000 # Port d'accès à l'interface utilisateur ou service principal
-      - 3301:3001 # Port secondaire (si nécessaire)
-    restart: unless-stopped # Redémarre automatiquement sauf si arrêté manuellement
+      - 3300:3000
+      - 3301:3001
+    restart: unless-stopped
     networks:
-      - galaxy # Réseau personnalisé nommé "galaxy"
+      - galaxy
 
 networks:
   galaxy:
-    driver: bridge # Utilisation du réseau bridge par défaut
+    driver: bridge
