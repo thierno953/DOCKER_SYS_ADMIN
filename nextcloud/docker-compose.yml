@@ -1,32 +1,117 @@
-version: "3.9"
-services:
-  db:
-    image: mariadb:latest
-    restart: unless-stopped
-    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
-    volumes:
-      - ./db:/var/lib/mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=cfitech63@
-      - MYSQL_PASSWORD=cfitech63@
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=cfitech
+version: "3.7"
 
+services:
+  # Service de la base de données PostgreSQL pour OnlyOffice
+  onlyoffice-postgresql:
+    image: postgres:12
+    container_name: onlyoffice-postgresql
+    environment:
+      - POSTGRES_DB=onlyoffice
+      - POSTGRES_USER=onlyoffice
+      - POSTGRES_PASSWORD=onlyoffice
+    restart: always
+    expose:
+      - "5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - nextcloud-net
+      - onlyoffice-net
+
+  # Service RabbitMQ pour OnlyOffice
+  onlyoffice-rabbitmq:
+    image: rabbitmq:3
+    container_name: onlyoffice-rabbitmq
+    restart: always
+    expose:
+      - "5672"
+    networks:
+      - onlyoffice-net
+
+  # Service Document Server OnlyOffice
+  onlyoffice-documentserver:
+    image: onlyoffice/documentserver
+    container_name: onlyoffice-documentserver
+    depends_on:
+      - onlyoffice-postgresql
+      - onlyoffice-rabbitmq
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=onlyoffice-postgresql
+      - DB_PORT=5432
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - DB_PWD=onlyoffice
+      - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
+      - JWT_ENABLED=true
+      - JWT_SECRET=secret
+      - JWT_HEADER=Authorization
+      - JWT_IN_BODY=true
+    ports:
+      - "8100:80" # Port pour l'accès à OnlyOffice
+    stdin_open: true
+    restart: always
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+      - onlyoffice_cache:/var/lib/onlyoffice/documentserver/App_Data/cache/files
+      - onlyoffice_example:/var/www/onlyoffice/documentserver-example/public/files
+      - onlyoffice_fonts:/usr/share/fonts
+    networks:
+      - onlyoffice-net
+      - nextcloud-net
+
+  # Service Nextcloud
   nextcloud:
     image: nextcloud:latest
-    restart: unless-stopped
+    container_name: nextcloud
+    depends_on:
+      - onlyoffice-documentserver
+      - onlyoffice-postgresql
+    environment:
+      - MYSQL_PASSWORD=Infotech63@
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=cfitech
+      - MYSQL_HOST=db
     ports:
       - "8000:80"
       - "8443:443"
-    links:
-      - db
     volumes:
       - ./nextcloud/config:/var/www/html/config
       - ./nextcloud/data:/var/www/html/data
       - ./nextcloud/custom_apps:/var/www/html/custom_apps
       - ./nextcloud/themes:/var/www/html/themes
+    restart: unless-stopped
+    networks:
+      - nextcloud-net
+
+  # Base de données MySQL pour Nextcloud
+  db:
+    image: mariadb:latest
+    container_name: nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    volumes:
+      - ./db:/var/lib/mysql
     environment:
-      - MYSQL_PASSWORD=cfitech63@
+      - MYSQL_ROOT_PASSWORD=Infotech63@
+      - MYSQL_PASSWORD=Infotech63@
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=cfitech
-      - MYSQL_HOST=db
+    networks:
+      - nextcloud-net
+
+volumes:
+  onlyoffice_data:
+  onlyoffice_logs:
+  onlyoffice_cache:
+  onlyoffice_example:
+  onlyoffice_fonts:
+  postgresql_data:
+  db:
+
+networks:
+  nextcloud-net:
+    external: false # Création d'un réseau spécifique à Nextcloud
+  onlyoffice-net:
+    external: false # Création d'un réseau spécifique à OnlyOffice
